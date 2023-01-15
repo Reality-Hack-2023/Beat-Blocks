@@ -44,7 +44,7 @@ namespace Oculus.Interaction.Editor
         public void OnSceneGUI()
         {
             Handles.color = EditorConstants.PRIMARY_COLOR;
-            Surfaces.PlaneSurface plane = _surfaceProperty.objectReferenceValue as Surfaces.PlaneSurface;
+            Surfaces.PointablePlane plane = _surfaceProperty.objectReferenceValue as Surfaces.PointablePlane;
 
             if (plane == null)
             {

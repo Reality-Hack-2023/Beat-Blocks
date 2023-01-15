@@ -31,7 +31,7 @@ namespace Oculus.Voice.Data
     [Serializable]
     public class VoiceSDKDataCreation
     {
-        [MenuItem("Assets/Create/Voice SDK/Add App Voice Experience to Scene", false, 100)]
+        [MenuItem("Assets/Create/Voice SDK/Add App Voice Experience to Scene")]
         public static void AddVoiceCommandServiceToScene()
         {
             var witGo = new GameObject();
@@ -61,7 +61,7 @@ namespace Oculus.Voice.Data
             WitDataCreation.CreateIntValue("");
         }
 
-        [MenuItem("Assets/Create/Voice SDK/Configuration", false, 200)]
+        [MenuItem("Assets/Create/Voice SDK/Configuration")]
         public static void CreateWitConfiguration()
         {
             WitConfigurationUtility.CreateConfiguration(WitAuthUtility.ServerToken);

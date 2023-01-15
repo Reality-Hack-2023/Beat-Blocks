@@ -32,13 +32,6 @@ namespace Oculus.Voice.Bindings.Android
 
         public VoiceEvents VoiceEvents => _voiceService.VoiceEvents;
 
-        public enum StoppedListeningReason : int {
-            NoReasonProvided = 0,
-            Inactivity = 1,
-            Timeout = 2,
-            Deactivation = 3,
-        }
-
         public VoiceSDKListenerBinding(IVoiceService voiceService, IVCBindingEvents bindingEvents) : base(
             "com.oculus.assistant.api.voicesdk.immersivevoicecommands.IVCEventsListener")
         {
@@ -48,20 +41,26 @@ namespace Oculus.Voice.Bindings.Android
 
         public void onResponse(string responseJson)
         {
-            WitResponseNode responseData = WitResponseJson.Parse(responseJson);
-            if (responseData != null)
+            WitResponseNode responseNode = WitResponseJson.Parse(responseJson);
+            responseNode.HandleResponse((transcription, final) =>
             {
-                VoiceEvents.OnResponse?.Invoke(responseData);
-            }
+                VoiceEvents.onFullTranscription?.Invoke(transcription);
+            }, (response, final) =>
+            {
+                VoiceEvents.OnResponse?.Invoke(response);
+            });
         }
 
         public void onPartialResponse(string responseJson)
         {
-            WitResponseNode responseData = WitResponseJson.Parse(responseJson);
-            if (responseData != null && responseData.HasResponse())
+            WitResponseNode responseNode = WitResponseJson.Parse(responseJson);
+            responseNode.HandleResponse((transcription, final) =>
             {
-                VoiceEvents.OnPartialResponse?.Invoke(responseData);
-            }
+                VoiceEvents.onPartialTranscription?.Invoke(transcription);
+            }, (response, final) =>
+            {
+
+            });
         }
 
         public void onError(string error, string message, string errorBody)
@@ -97,19 +96,6 @@ namespace Oculus.Voice.Bindings.Android
         public void onStoppedListening(int reason)
         {
             VoiceEvents.OnStoppedListening?.Invoke();
-            switch((StoppedListeningReason)reason){
-                case StoppedListeningReason.NoReasonProvided:
-                    break;
-                case StoppedListeningReason.Inactivity:
-                    VoiceEvents.OnStoppedListeningDueToInactivity?.Invoke();
-                    break;
-                case StoppedListeningReason.Timeout:
-                    VoiceEvents.OnStoppedListeningDueToTimeout?.Invoke();
-                    break;
-                case StoppedListeningReason.Deactivation:
-                    VoiceEvents.OnStoppedListeningDueToDeactivation?.Invoke();
-                    break;
-            }
         }
 
         public void onMicDataSent()

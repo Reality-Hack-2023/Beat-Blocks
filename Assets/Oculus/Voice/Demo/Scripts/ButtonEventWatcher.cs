@@ -18,8 +18,10 @@
  * limitations under the License.
  */
 
+using System;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 namespace Oculus.Voice.Demo
 {

@@ -18,8 +18,6 @@
  * limitations under the License.
  */
 
-#if OVR_UNITY_ASSET_STORE
-
 #if USING_XR_MANAGEMENT && (USING_XR_SDK_OCULUS || USING_XR_SDK_OPENXR)
 #define USING_XR_SDK
 #endif
@@ -37,10 +35,9 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Diagnostics;
-using Oculus.VR.Editor;
 
 [InitializeOnLoad]
-public class OVRPluginUpdater : IOVRPluginInfoSupplier
+public class OVRPluginUpdater
 {
 	enum PluginPlatform
 	{
@@ -51,7 +48,7 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 		Win,
 		Win64,
 		Win64OpenXR,
-    }
+	}
 	class PluginPackage
 	{
 		public string RootPath;
@@ -274,7 +271,7 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 				{ PluginPlatform.Win,              rootPath + GetPluginBuildTargetSubPath(PluginPlatform.Win)              },
 				{ PluginPlatform.Win64,            rootPath + GetPluginBuildTargetSubPath(PluginPlatform.Win64)            },
 				{ PluginPlatform.Win64OpenXR,      rootPath + GetPluginBuildTargetSubPath(PluginPlatform.Win64OpenXR)      },
-            }
+			}
 		};
 	}
 
@@ -308,7 +305,18 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 
 	private static string GetUtilitiesPluginRootPath()
 	{
-		return Path.Combine(OVRPluginInfo.GetUtilitiesRootPath(), "Plugins");
+		return GetUtilitiesRootPath() + @"/Plugins";
+	}
+
+	public static string GetUtilitiesRootPath()
+	{
+		var so = ScriptableObject.CreateInstance(typeof(OVRPluginUpdaterStub));
+		var script = MonoScript.FromScriptableObject(so);
+		string assetPath = AssetDatabase.GetAssetPath(script);
+		string editorDir = Directory.GetParent(assetPath).FullName;
+		string ovrDir = Directory.GetParent(editorDir).FullName;
+
+		return ovrDir;
 	}
 
 	private static string GetBundledPluginRootPath()
@@ -346,7 +354,7 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 			case PluginPlatform.Win64OpenXR:
 				path = @"/Win64OpenXR/OVRPlugin.dll";
 				break;
-            default:
+			default:
 				throw new ArgumentException("Attempted GetPluginBuildTargetSubPath() for unsupported BuildTarget: " + target);
 		}
 
@@ -404,7 +412,7 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 
 	private static bool ShouldAttemptPluginUpdate()
 	{
-		if (unityRunningInBatchmode || OVRPluginInfo.IsInsidePackageDistribution())
+		if (unityRunningInBatchmode || OVRPluginUpdaterStub.IsInsidePackageDistribution())
 		{
 			return false;
 		}
@@ -574,7 +582,7 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 							pi.SetPlatformData("Editor", "OS", "Windows");
 						}
 						break;
-                    default:
+					default:
 						throw new ArgumentException("Attempted EnablePluginPackage() for unsupported BuildTarget: " + platform);
 				}
 
@@ -633,7 +641,7 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 	[MenuItem(k_disablePluginMenuStr, false, 102)]
 	private static void AttemptPluginDisable()
 	{
-		if (OVRPluginInfo.IsInsidePackageDistribution())
+		if (OVRPluginUpdaterStub.IsInsidePackageDistribution())
 		{
 			UnityEngine.Debug.LogError("Unable to change plugin when using package distribution");
 			return;
@@ -680,7 +688,7 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 	[MenuItem("Oculus/Tools/OVR Utilities Plugin/Manual Update OVRPlugin (to OVR Utilities version)", false, 0)]
 	private static void RunPluginUpdate()
 	{
-		if (OVRPluginInfo.IsInsidePackageDistribution())
+		if (OVRPluginUpdaterStub.IsInsidePackageDistribution())
 		{
 			UnityEngine.Debug.LogError("Unable to change plugin when using package distribution");
 			return;
@@ -701,7 +709,7 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 	private static bool IsActivateOVRPluginOpenXRMenuEnabled()
 	{
 		//This section controls whether we draw a checkmark next to this menu item (it's currently active...)
-		Menu.SetChecked(k_setToOpenXRPluginMenuStr, IsOVRPluginOpenXRActivatedInternal());
+		Menu.SetChecked(k_setToOpenXRPluginMenuStr, IsOVRPluginOpenXRActivated());
 
 		//And this section controls whether the menu item is enabled (you're allowed to toggle it)
 #if !USING_XR_SDK && !REQUIRES_XR_SDK
@@ -720,7 +728,7 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 			return;
 		}
 
-		if (OVRPluginInfo.IsInsidePackageDistribution())
+		if (OVRPluginUpdaterStub.IsInsidePackageDistribution())
 		{
 			UnityEngine.Debug.LogError("Unable to change plugin when using package distribution");
 			return;
@@ -904,7 +912,7 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 			return;
 		}
 
-		if (OVRPluginInfo.IsInsidePackageDistribution())
+		if (OVRPluginUpdaterStub.IsInsidePackageDistribution())
 		{
 			UnityEngine.Debug.LogError("Unable to change plugin when using package distribution");
 			return;
@@ -1043,7 +1051,25 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 		}
 	}
 
-    public static bool IsOVRPluginLegacyAPIActivated()
+	// Test if the OVRPlugin/OpenXR plugin is currently activated, used by other editor utilities
+	public static bool IsOVRPluginOpenXRActivated()
+	{
+		if (!unityVersionSupportsAndroidUniversal) // sanity check
+		{
+			return false;
+		}
+
+		PluginPackage enabledUtilsPluginPkg = GetEnabledUtilsPluginPkg();
+
+		if (enabledUtilsPluginPkg == null)
+		{
+			return false;
+		}
+
+		return enabledUtilsPluginPkg.IsAndroidOpenXREnabled();
+	}
+
+	public static bool IsOVRPluginLegacyAPIActivated()
 	{
 		PluginPackage enabledUtilsPluginPkg = GetEnabledUtilsPluginPkg();
 
@@ -1055,7 +1081,13 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 		return enabledUtilsPluginPkg.IsAndroidUniversalEnabled();
 	}
 
-    // Separate entry point needed since "-executeMethod" does not support parameters or default parameter values
+	public static bool IsOVRPluginUnityProvidedActivated()
+	{
+		PluginPackage enabledUtilsPluginPkg = GetEnabledUtilsPluginPkg();
+		return enabledUtilsPluginPkg != null && enabledUtilsPluginPkg.IsBundledPluginPackage();
+	}
+
+	// Separate entry point needed since "-executeMethod" does not support parameters or default parameter values
 	private static void BatchmodePluginUpdate()
 	{
 		OnDelayCall(); // manually invoke when running editor in batchmode
@@ -1232,30 +1264,4 @@ public class OVRPluginUpdater : IOVRPluginInfoSupplier
 			EditorApplication.OpenProject(GetCurrentProjectPath());
 		}
 	}
-
-    #region IOVRPluginInfoSupplier Implementation
-
-    // Test if the OVRPlugin/OpenXR plugin is currently activated, used by other editor utilities
-    public bool IsOVRPluginOpenXRActivated() => IsOVRPluginOpenXRActivatedInternal();
-
-    private static bool IsOVRPluginOpenXRActivatedInternal()
-    {
-        if (!unityVersionSupportsAndroidUniversal) // sanity check
-        {
-            return false;
-        }
-
-        PluginPackage enabledUtilsPluginPkg = GetEnabledUtilsPluginPkg();
-        return enabledUtilsPluginPkg != null && enabledUtilsPluginPkg.IsAndroidOpenXREnabled();
-    }
-
-    public bool IsOVRPluginUnityProvidedActivated()
-    {
-        PluginPackage enabledUtilsPluginPkg = GetEnabledUtilsPluginPkg();
-        return enabledUtilsPluginPkg != null && enabledUtilsPluginPkg.IsBundledPluginPackage();
-    }
-
-    #endregion
 }
-
-#endif

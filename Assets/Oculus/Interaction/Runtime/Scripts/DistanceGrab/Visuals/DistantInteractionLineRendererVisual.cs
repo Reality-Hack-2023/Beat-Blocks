@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -36,7 +37,7 @@ namespace Oculus.Interaction.DistanceReticles
             _lineRenderer.positionCount = NumLinePoints;
         }
 
-        protected override void InteractableSet(IDistanceInteractable interactable)
+        protected override void InteractableSet(MonoBehaviour interactable)
         {
             base.InteractableSet(interactable);
             _lineRenderer.enabled = true;
@@ -48,9 +49,9 @@ namespace Oculus.Interaction.DistanceReticles
             _lineRenderer.enabled = false;
         }
 
-        protected override void RenderLine(Vector3[] linePoints)
+        protected override void RenderLine(List<Vector3> linePoints)
         {
-            _lineRenderer.SetPositions(linePoints);
+            _lineRenderer.SetPositions(linePoints.ToArray());
         }
 
         #region Inject

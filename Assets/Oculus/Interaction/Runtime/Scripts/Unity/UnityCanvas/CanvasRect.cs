@@ -23,8 +23,24 @@ using UnityEngine;
 
 namespace Oculus.Interaction.UnityCanvas
 {
-    public class CanvasRect : CanvasMesh
+    public class CanvasRect : CanvasRenderTextureMesh
     {
+        protected override OVROverlay.OverlayShape OverlayShape => OVROverlay.OverlayShape.Quad;
+
+        protected override void UpdateOverlayPositionAndScale()
+        {
+            if (_overlay == null)
+            {
+                return;
+            }
+
+            var resolution = _canvasRenderTexture.GetBaseResolutionToUse();
+            _overlay.transform.localPosition = -_runtimeOffset;
+            _overlay.transform.localScale = new Vector3(_canvasRenderTexture.PixelsToUnits(resolution.x),
+                                                        _canvasRenderTexture.PixelsToUnits(resolution.y),
+                                                        1);
+        }
+
         protected override Vector3 MeshInverseTransform(Vector3 localPosition)
         {
             return localPosition;
@@ -73,7 +89,7 @@ namespace Oculus.Interaction.UnityCanvas
 
         public void InjectAllCanvasRect(CanvasRenderTexture canvasRenderTexture)
         {
-            InjectAllCanvasMesh(canvasRenderTexture);
+            InjectAllCanvasRenderTextureMesh(canvasRenderTexture);
         }
 
         #endregion

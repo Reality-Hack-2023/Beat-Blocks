@@ -22,7 +22,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Oculus.Interaction.Throw;
-using System;
 
 namespace Oculus.Interaction
 {
@@ -42,15 +41,14 @@ namespace Oculus.Interaction
         private Transform _grabTarget;
 
         private Collider[] _colliders;
+
         private Tween _tween;
+
         private bool _outsideReleaseDist = false;
 
         [SerializeField, Interface(typeof(IVelocityCalculator)), Optional]
         private MonoBehaviour _velocityCalculator;
         public IVelocityCalculator VelocityCalculator { get; set; }
-
-        private GrabInteractable _selectedInteractableOverride;
-        private bool _isSelectionOverriden = false;
 
         protected override void Awake()
         {
@@ -108,7 +106,7 @@ namespace Oculus.Interaction
             float score = bestScore;
             bool closestPointIsInside = false;
 
-            var interactables = Interaction.GrabInteractable.Registry.List(this);
+            IEnumerable<GrabInteractable> interactables = GrabInteractable.Registry.List(this);
             foreach (GrabInteractable interactable in interactables)
             {
                 Collider[] colliders = interactable.Colliders;
@@ -131,46 +129,6 @@ namespace Oculus.Interaction
             }
 
             return closestInteractable;
-        }
-
-
-        public void ForceSelect(GrabInteractable interactable)
-        {
-            _isSelectionOverriden = true;
-            _selectedInteractableOverride = interactable;
-            SetComputeCandidateOverride(() => interactable);
-            SetComputeShouldSelectOverride(() => ReferenceEquals(interactable, Interactable));
-            SetComputeShouldUnselectOverride(() => !ReferenceEquals(interactable, SelectedInteractable), false);
-        }
-
-        public void ForceRelease()
-        {
-            _isSelectionOverriden = false;
-            _selectedInteractableOverride = null;
-            ClearComputeCandidateOverride();
-            ClearComputeShouldSelectOverride();
-            if (State == InteractorState.Select)
-            {
-                SetComputeShouldUnselectOverride(() => true);
-            }
-            else
-            {
-                ClearComputeShouldUnselectOverride();
-            }
-        }
-
-        public override void Unselect()
-        {
-            if (State == InteractorState.Select
-                && _isSelectionOverriden
-                && (SelectedInteractable == _selectedInteractableOverride
-                    || SelectedInteractable == null))
-            {
-                _isSelectionOverriden = false;
-                _selectedInteractableOverride = null;
-                ClearComputeShouldUnselectOverride();
-            }
-            base.Unselect();
         }
 
         protected override void InteractableSelected(GrabInteractable interactable)
@@ -213,14 +171,14 @@ namespace Oculus.Interaction
                     Pose source = _interactable.GetGrabSourceForTarget(target);
                     _tween.StopAndSetPose(source);
                     SelectedInteractable.PointableElement.ProcessPointerEvent(
-                        new PointerEvent(Identifier, PointerEventType.Move, _tween.Pose, Data));
+                        new PointerEvent(Identifier, PointerEventType.Move, _tween.Pose));
                     _tween.MoveTo(target);
                 }
                 else
                 {
                     _tween.StopAndSetPose(target);
                     SelectedInteractable.PointableElement.ProcessPointerEvent(
-                        new PointerEvent(Identifier, PointerEventType.Move, target, Data));
+                        new PointerEvent(Identifier, PointerEventType.Move, target));
                     _tween.MoveTo(target);
                 }
             }
@@ -238,7 +196,7 @@ namespace Oculus.Interaction
         protected override void DoSelectUpdate()
         {
             GrabInteractable interactable = _selectedInteractable;
-            if (interactable == null)
+            if(interactable == null)
             {
                 return;
             }
@@ -267,9 +225,21 @@ namespace Oculus.Interaction
             }
         }
 
-        protected override bool ComputeShouldUnselect()
-        {
-            return _outsideReleaseDist || base.ComputeShouldUnselect();
+        public override bool ShouldUnselect {
+            get
+            {
+                if (State != InteractorState.Select)
+                {
+                    return false;
+                }
+
+                if (_outsideReleaseDist)
+                {
+                    return true;
+                }
+
+                return base.ShouldUnselect;
+            }
         }
 
         #region Inject

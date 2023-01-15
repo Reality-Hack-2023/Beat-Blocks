@@ -36,7 +36,7 @@ namespace Oculus.Voice.Demo.BuiltInDemo
         [Tooltip("The UI text element to show app messages.")]
         public Text logText;
 
-        [Tooltip("The timer ring sound.")] public AudioClip[] timesUpSounds;
+        [Tooltip("The timer ring sound.")] public AudioClip buzzSound;
 
         // Update is called once per frame
         void Update()
@@ -66,9 +66,8 @@ namespace Oculus.Voice.Demo.BuiltInDemo
             _time = 0;
             _timerRunning = false;
             _timerExist = false;
-            Log("Your timer is complete.");
-            AudioClip timesUpSfx = timesUpSounds[UnityEngine.Random.Range(0, timesUpSounds.Length)];
-            AudioSource.PlayClipAtPoint(timesUpSfx, Vector3.zero);
+            Log("Buzz!");
+            AudioSource.PlayClipAtPoint(buzzSound, Vector3.zero);
         }
 
         /// <summary>

@@ -53,10 +53,6 @@ namespace Oculus.Interaction
         private int _interactors;
         private int _selectInteractors;
 
-        [SerializeField, Optional]
-        private UnityEngine.Object _data = null;
-        public object Data { get; protected set; } = null;
-
         protected bool _started = false;
 
         protected virtual void Awake()
@@ -83,13 +79,6 @@ namespace Oculus.Interaction
                     MaxSelectingInteractors = interactable.MaxSelectingInteractors
                 });
             }
-
-            if (Data == null)
-            {
-                _data = this;
-                Data = _data;
-            }
-
             this.EndStart(ref _started);
         }
 
@@ -198,13 +187,6 @@ namespace Oculus.Interaction
             _interactables =
                 interactables.ConvertAll(interactable => interactable as MonoBehaviour);
         }
-
-        public void InjectOptionalData(object data)
-        {
-            _data = data as UnityEngine.Object;
-            Data = data;
-        }
-
 
         #endregion
     }

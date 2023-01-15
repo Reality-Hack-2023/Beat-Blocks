@@ -35,10 +35,6 @@ public readonly struct OVRSpace : IEquatable<OVRSpace>
         /// </summary>
         Local,
 
-        /// <summary>
-        /// The storage location is in the cloud.
-        /// </summary>
-        Cloud,
     }
 
     /// <summary>
@@ -83,7 +79,7 @@ public readonly struct OVRSpace : IEquatable<OVRSpace>
     /// where "Y" are the hexadecimal digits of the <see cref="Handle"/>.
     /// </summary>
     /// <returns>Returns a string representation of this <see cref="OVRSpace"/>.</returns>
-    public override string ToString() => $"0x{Handle:x16}";
+    public override string ToString() => $"0x{Handle:x8}";
 
     public bool Equals(OVRSpace other) => Handle == other.Handle;
 
@@ -107,7 +103,6 @@ public static partial class OVRExtensions
         switch (storageLocation)
         {
             case OVRSpace.StorageLocation.Local: return OVRPlugin.SpaceStorageLocation.Local;
-            case OVRSpace.StorageLocation.Cloud: return OVRPlugin.SpaceStorageLocation.Cloud;
             default:
                 throw new NotSupportedException($"{storageLocation} is not a supported {nameof(OVRPlugin.SpaceStorageLocation)}");
         }

@@ -22,19 +22,18 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using Oculus.Interaction.Surfaces;
 using System;
-using UnityEngine.Serialization;
 
 namespace Oculus.Interaction
 {
     public class PokeInteractable : PointerInteractable<PokeInteractor, PokeInteractable>
     {
-        [SerializeField, Interface(typeof(ISurface))]
-        private MonoBehaviour _surface;
-        public ISurface Surface;
-
         [SerializeField, Interface(typeof(IProximityField))]
         private MonoBehaviour _proximityField;
         public IProximityField ProximityField;
+
+        [SerializeField, Interface(typeof(IPointableSurface))]
+        private MonoBehaviour _surface;
+        public IPointableSurface Surface;
 
         [SerializeField]
         private float _maxDistance = 0.1f;
@@ -45,32 +44,21 @@ namespace Oculus.Interaction
 
         [SerializeField]
         private float _releaseDistance = 0.25f;
+        public float ReleaseDistance => _releaseDistance;
 
-        [SerializeField, Optional]
-        private int _tiebreakerScore = 0;
+        public float EnterHoverDistance => _enterHoverDistance;
+
+        [SerializeField]
+        private float _horizontalDragThreshold = 0.0f;
+        public float HorizontalDragThreshold => _horizontalDragThreshold;
+
+        [SerializeField]
+        private float _verticalDragThreshold = 0.0f;
+        public float VerticalDragThreshold => _verticalDragThreshold;
 
         [SerializeField, Optional]
         private Collider _volumeMask = null;
         public Collider VolumeMask { get => _volumeMask; }
-
-        [Serializable]
-        public class DragThresholdingConfig
-        {
-            public bool Enabled;
-            public float SurfaceThreshold;
-            public float ZThreshold;
-            public ProgressCurve DragEaseCurve;
-        }
-
-        [SerializeField]
-        private DragThresholdingConfig _dragThresholding =
-            new DragThresholdingConfig()
-            {
-                Enabled = true,
-                SurfaceThreshold = 0.01f,
-                ZThreshold = 0.01f,
-                DragEaseCurve = new ProgressCurve(AnimationCurve.EaseInOut(0,0,1,1), 0.05f)
-            };
 
         [Serializable]
         public class PositionPinningConfig
@@ -80,42 +68,7 @@ namespace Oculus.Interaction
         }
 
         [SerializeField]
-        private PositionPinningConfig _positionPinning =
-            new PositionPinningConfig()
-            {
-                Enabled = false,
-                MaxPinDistance = 0f
-            };
-
-        #region Properties
-        public float EnterHoverDistance => _enterHoverDistance;
-
-        public float ReleaseDistance => _releaseDistance;
-
-        public int TiebreakerScore
-        {
-            get
-            {
-                return _tiebreakerScore;
-            }
-            set
-            {
-                _tiebreakerScore = value;
-            }
-        }
-
-        public DragThresholdingConfig DragThresholding
-        {
-            get
-            {
-                return _dragThresholding;
-            }
-
-            set
-            {
-                _dragThresholding = value;
-            }
-        }
+        private PositionPinningConfig _positionPinning;
 
         public PositionPinningConfig PositionPinning
         {
@@ -130,13 +83,11 @@ namespace Oculus.Interaction
             }
         }
 
-        #endregion
-
         protected override void Awake()
         {
             base.Awake();
             ProximityField = _proximityField as IProximityField;
-            Surface = _surface as ISurface;
+            Surface = _surface as IPointableSurface;
         }
 
         protected override void Start()
@@ -153,9 +104,7 @@ namespace Oculus.Interaction
 
         public Vector3 ComputeClosestPoint(Vector3 point)
         {
-            Vector3 proximityFieldPoint = ProximityField.ComputeClosestPoint(point);
-            Surface.ClosestSurfacePoint(proximityFieldPoint, out SurfaceHit hit);
-            return hit.Point;
+            return ProximityField.ComputeClosestPoint(point);
         }
 
         public Vector3 ClosestSurfacePoint(Vector3 point)
@@ -172,14 +121,14 @@ namespace Oculus.Interaction
 
         #region Inject
 
-        public void InjectAllPokeInteractable(ISurface surface,
+        public void InjectAllPokeInteractable(IPointableSurface surface,
                                               IProximityField proximityField)
         {
             InjectSurface(surface);
             InjectProximityField(proximityField);
         }
 
-        public void InjectSurface(ISurface surface)
+        public void InjectSurface(IPointableSurface surface)
         {
             _surface = surface as MonoBehaviour;
             Surface = surface;
@@ -199,6 +148,16 @@ namespace Oculus.Interaction
         public void InjectOptionalReleaseDistance(float releaseDistance)
         {
             _releaseDistance = releaseDistance;
+        }
+
+        public void InjectOptionalHorizontalDragThreshold(float horizontalDragThreshold)
+        {
+            _horizontalDragThreshold = horizontalDragThreshold;
+        }
+
+        public void InjectOptionalVerticalDragThreshold(float verticalDragThreshold)
+        {
+            _verticalDragThreshold = verticalDragThreshold;
         }
 
         public void InjectOptionalEnterHoverDistance(float enterHoverDistance)

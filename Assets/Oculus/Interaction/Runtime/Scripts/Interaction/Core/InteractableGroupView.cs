@@ -37,10 +37,6 @@ namespace Oculus.Interaction
 
         private List<IInteractable> Interactables;
 
-        [SerializeField, Optional]
-        private UnityEngine.Object _data = null;
-        public object Data { get; protected set; } = null;
-
         public int InteractorsCount
         {
             get
@@ -122,9 +118,7 @@ namespace Oculus.Interaction
                 if (_state == value) return;
                 InteractableState previousState = _state;
                 _state = value;
-                WhenStateChanged(new InteractableStateChangeArgs(
-                    previousState,_state
-                ));
+                WhenStateChanged(new InteractableStateChangeArgs { PreviousState = previousState, NewState = _state });
             }
         }
 
@@ -157,13 +151,6 @@ namespace Oculus.Interaction
             {
                 Assert.IsNotNull(interactable);
             }
-
-            if (Data == null)
-            {
-                _data = this;
-                Data = _data;
-            }
-
             this.EndStart(ref _started);
         }
 
@@ -216,14 +203,6 @@ namespace Oculus.Interaction
             _interactables =
                 Interactables.ConvertAll(interactable => interactable as MonoBehaviour);
         }
-
-        public void InjectOptionalData(object data)
-        {
-            _data = data as UnityEngine.Object;
-            Data = data;
-        }
-
-
         #endregion
     }
 }

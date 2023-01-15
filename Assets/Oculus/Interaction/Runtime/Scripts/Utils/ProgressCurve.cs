@@ -58,11 +58,6 @@ namespace Oculus.Interaction
 
         public ProgressCurve(ProgressCurve other)
         {
-            Copy(other);
-        }
-
-        public void Copy(ProgressCurve other)
-        {
             _animationCurve = other._animationCurve;
             _animationLength = other._animationLength;
             _animationStartTime = other._animationStartTime;

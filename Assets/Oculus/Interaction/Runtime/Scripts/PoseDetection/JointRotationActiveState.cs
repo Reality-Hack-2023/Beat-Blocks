@@ -176,7 +176,7 @@ namespace Oculus.Interaction.PoseDetection
             }
             _jointDeltaConfig = new JointDeltaConfig(GetInstanceID(), allTrackedJoints);
 
-            bool foundAspect = Hand.TryGetAspect(out JointDeltaProvider aspect);
+            bool foundAspect = Hand.GetHandAspect(out JointDeltaProvider aspect);
             Assert.IsTrue(foundAspect);
             JointDeltaProvider = aspect;
 

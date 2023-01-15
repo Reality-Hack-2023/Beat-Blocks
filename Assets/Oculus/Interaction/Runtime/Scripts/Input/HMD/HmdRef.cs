@@ -29,14 +29,14 @@ namespace Oculus.Interaction.Input
     /// </summary>
     public class HmdRef : MonoBehaviour, IHmd
     {
-        [SerializeField, Interface(typeof(IHmd))]
+        [SerializeField, Interface(typeof(Hmd))]
         private MonoBehaviour _hmd;
         private IHmd Hmd;
 
-        public event Action WhenUpdated
+        public event Action HmdUpdated
         {
-            add => Hmd.WhenUpdated += value;
-            remove => Hmd.WhenUpdated -= value;
+            add => Hmd.HmdUpdated += value;
+            remove => Hmd.HmdUpdated -= value;
         }
 
         protected virtual void Awake()
@@ -52,11 +52,6 @@ namespace Oculus.Interaction.Input
         public bool GetRootPose(out Pose pose)
         {
             return Hmd.GetRootPose(out pose);
-        }
-
-        public bool TryGetAspect<TAspect>(out TAspect aspect) where TAspect : class
-        {
-            return Hmd.TryGetAspect(out aspect);
         }
 
         #region Inject

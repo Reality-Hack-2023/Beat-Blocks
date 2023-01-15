@@ -36,12 +36,7 @@ namespace Oculus.Interaction
         [SerializeField]
         private float _maxRayLength = 5f;
 
-        [SerializeField]
-        [Tooltip("(Meters, World) The threshold below which distances to a surface " +
-                 "are treated as equal for the purposes of ranking.")]
-        private float _equalDistanceThreshold = 0.001f;
-
-        private RayCandidateProperties _rayCandidateProperties = null;
+        private RayCandidate _rayCandidate = null;
 
         private IMovement _movement;
         private SurfaceHit _movedHit;
@@ -88,18 +83,18 @@ namespace Oculus.Interaction
             Ray = new Ray(Origin, Forward);
         }
 
-        public class RayCandidateProperties : ICandidatePosition
+        public class RayCandidate : ICandidatePosition
         {
             public RayInteractable ClosestInteractable { get; }
             public Vector3 CandidatePosition { get; }
-            public RayCandidateProperties(RayInteractable closestInteractable, Vector3 candidatePosition)
+            public RayCandidate(RayInteractable closestInteractable, Vector3 candidatePosition)
             {
                 ClosestInteractable = closestInteractable;
                 CandidatePosition = candidatePosition;
             }
         }
 
-        public override object CandidateProperties => _rayCandidateProperties;
+        public override object Candidate => _rayCandidate;
 
         protected override RayInteractable ComputeCandidate()
         {
@@ -108,15 +103,13 @@ namespace Oculus.Interaction
             RayInteractable closestInteractable = null;
             float closestDist = float.MaxValue;
             Vector3 candidatePosition = Vector3.zero;
-            var interactables = RayInteractable.Registry.List(this);
+            IEnumerable<RayInteractable> interactables = RayInteractable.Registry.List(this);
 
             foreach (RayInteractable interactable in interactables)
             {
                 if (interactable.Raycast(Ray, out SurfaceHit hit, MaxRayLength, false))
                 {
-                    bool equal = Mathf.Abs(hit.Distance - closestDist) < _equalDistanceThreshold;
-                    if ((!equal && hit.Distance < closestDist) ||
-                        (equal && interactable.TiebreakerScore > closestInteractable.TiebreakerScore))
+                    if (hit.Distance < closestDist)
                     {
                         closestDist = hit.Distance;
                         closestInteractable = interactable;
@@ -129,7 +122,7 @@ namespace Oculus.Interaction
             float rayDist = (closestInteractable != null ? closestDist : MaxRayLength);
             End = Origin + rayDist * Forward;
 
-            _rayCandidateProperties = new RayCandidateProperties(closestInteractable, candidatePosition);
+            _rayCandidate = new RayCandidate(closestInteractable, candidatePosition);
 
             return closestInteractable;
         }
@@ -222,12 +215,6 @@ namespace Oculus.Interaction
         {
             _rayOrigin = rayOrigin;
         }
-
-        public void InjectOptionalEqualDistanceThreshold(float equalDistanceThreshold)
-        {
-            _equalDistanceThreshold = equalDistanceThreshold;
-        }
-
         #endregion
     }
 }

@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.Diagnostics;
@@ -41,7 +43,7 @@ public static class OVREditorUtil {
         bool value = EditorGUILayout.Toggle(name, member);
         if (EditorGUI.EndChangeCheck())
         {
-            Undo.RecordObject(target, "Changed " + name.text);
+            Undo.RecordObject(target, "Changed " + name);
             member = value;
             modified = true;
         }
@@ -67,7 +69,7 @@ public static class OVREditorUtil {
         int value = EditorGUILayout.IntField(name, member);
         if (EditorGUI.EndChangeCheck())
         {
-            Undo.RecordObject(target, "Changed " + name.text);
+            Undo.RecordObject(target, "Changed " + name);
             member = value;
             modified = true;
         }
@@ -86,7 +88,7 @@ public static class OVREditorUtil {
         float value = EditorGUILayout.FloatField(name, member);
         if (EditorGUI.EndChangeCheck())
         {
-            Undo.RecordObject(target, "Changed " + name.text);
+            Undo.RecordObject(target, "Changed " + name);
             member = value;
             modified = true;
         }
@@ -105,7 +107,7 @@ public static class OVREditorUtil {
         double value = EditorGUILayout.DoubleField(name, member);
         if (EditorGUI.EndChangeCheck())
         {
-            Undo.RecordObject(target, "Changed " + name.text);
+            Undo.RecordObject(target, "Changed " + name);
             member = value;
             modified = true;
         }
@@ -124,7 +126,7 @@ public static class OVREditorUtil {
         Color value = EditorGUILayout.ColorField(name, member);
         if (EditorGUI.EndChangeCheck())
         {
-            Undo.RecordObject(target, "Changed " + name.text);
+            Undo.RecordObject(target, "Changed " + name);
             member = value;
             modified = true;
         }
@@ -143,7 +145,7 @@ public static class OVREditorUtil {
         int value = EditorGUILayout.MaskField(name, layerMask, layerMaskOptions);
         if (EditorGUI.EndChangeCheck())
         {
-            Undo.RecordObject(target, "Changed " + name.text);
+            Undo.RecordObject(target, "Changed " + name);
             layerMask = value;
         }
     }
@@ -163,7 +165,7 @@ public static class OVREditorUtil {
 		T value = (T)(object)EditorGUILayout.EnumPopup(name, member as System.Enum);
         if (EditorGUI.EndChangeCheck())
         {
-            Undo.RecordObject(target, "Changed " + name.text);
+            Undo.RecordObject(target, "Changed " + name);
             member = value;
             modified = true;
         }
@@ -191,7 +193,7 @@ public static class OVREditorUtil {
 		string value = EditorGUILayout.TextField(name, member);
 		if (EditorGUI.EndChangeCheck())
 		{
-			Undo.RecordObject(target, "Changed " + name.text);
+			Undo.RecordObject(target, "Changed " + name);
 			member = value;
 			modified = true;
 		}
@@ -219,7 +221,7 @@ public static class OVREditorUtil {
 		Texture2D value = (Texture2D)EditorGUILayout.ObjectField(name, member, typeof(Texture2D), false);
 		if (EditorGUI.EndChangeCheck())
 		{
-			Undo.RecordObject(target, "Changed " + name.text);
+			Undo.RecordObject(target, "Changed " + name);
 			member = value;
 			modified = true;
 		}
@@ -230,25 +232,6 @@ public static class OVREditorUtil {
         }
 
         EditorGUILayout.EndHorizontal();
-	}
-
-	[Conditional("UNITY_EDITOR_WIN"), Conditional("UNITY_STANDALONE_WIN"), Conditional("UNITY_ANDROID")]
-	public static void SetupPopupField(Object target, string name, ref int selectedIndex, GUIContent[] options, ref bool modified)
-	{
-		SetupPopupField(target, new GUIContent(name), ref selectedIndex, options, ref modified);
-	}
-	
-	[Conditional("UNITY_EDITOR_WIN"), Conditional("UNITY_STANDALONE_WIN"), Conditional("UNITY_ANDROID")]
-	public static void SetupPopupField(Object target, GUIContent name, ref int selectedIndex, GUIContent[] options, ref bool modified)
-	{
-		EditorGUI.BeginChangeCheck();
-		var value = EditorGUILayout.Popup(name, selectedIndex, options);
-		if (EditorGUI.EndChangeCheck())
-		{
-			Undo.RecordObject(target, "Changed " + name.text);
-			selectedIndex = value;
-			modified = true;
-		}
 	}
 
 	[Conditional("UNITY_EDITOR_WIN"), Conditional("UNITY_STANDALONE_WIN"), Conditional("UNITY_ANDROID")]

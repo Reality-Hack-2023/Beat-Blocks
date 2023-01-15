@@ -118,6 +118,12 @@ namespace Oculus.Interaction
             _audioSource.Play();
         }
 
+        //DZ
+        public void StopAudio()
+        {
+            _audioSource.Stop();
+        } 
+
         /// <summary>
         /// Choose a random clip without repeating the last clip
         /// </summary>

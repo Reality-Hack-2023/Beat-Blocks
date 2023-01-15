@@ -30,5 +30,10 @@ namespace Oculus.Interaction.UnityCanvas
         AlphaCutout,
         [InspectorName("Opaque")]
         Opaque,
+
+        [InspectorName("OVR/Overlay")]
+        OVR_Overlay = 100,
+        [InspectorName("OVR/Underlay")]
+        OVR_Underlay
     }
 }

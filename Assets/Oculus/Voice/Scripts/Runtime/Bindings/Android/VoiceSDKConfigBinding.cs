@@ -19,7 +19,6 @@
  */
 
 using Facebook.WitAi.Configuration;
-using Facebook.WitAi;
 using UnityEngine;
 
 namespace Oculus.Voice.Bindings.Android
@@ -59,10 +58,6 @@ namespace Oculus.Voice.Bindings.Android
                 configuration.sendAudioToWit);
             witRuntimeConfig.Set("preferredActivationOffset",
                 configuration.preferredActivationOffset);
-            witRuntimeConfig.Set("clientName",
-                WitRequest.WIT_CLIENT_NAME);
-            witRuntimeConfig.Set("serverVersion",
-                WitRequest.WIT_API_VERSION);
 
             return witRuntimeConfig;
         }

@@ -31,7 +31,6 @@ using System.IO;
 using System.Xml;
 using System.Diagnostics;
 using System.Threading;
-using Oculus.VR.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -46,10 +45,6 @@ using UnityEngine.XR.OpenXR;
 using UnityEditor.XR.OpenXR.Features;
 #endif
 
-#if USING_XR_SDK_OCULUS
-using Unity.XR.Oculus;
-#endif
-
 [InitializeOnLoad]
 public class OVRGradleGeneration
 	: IPreprocessBuildWithReport, IPostprocessBuildWithReport
@@ -60,11 +55,7 @@ public class OVRGradleGeneration
 	public OVRADBTool adbTool;
 	public Process adbProcess;
 
-#if PRIORITIZE_OCULUS_XR_SETTINGS
 	private int _callbackOrder = 3;
-#else
-	private int _callbackOrder = 99999; // be executed after OculusManifest in Oculus XR Plugin, which has callbackOrder 10000
-#endif
 
 	public int callbackOrder { get { return _callbackOrder; } }
 	static private System.DateTime buildStartTime;
@@ -76,11 +67,7 @@ public class OVRGradleGeneration
 	static bool autoIncrementVersion = false;
 #endif
 
-#if UNITY_ANDROID && USING_XR_SDK_OCULUS
-    static private bool symmetricWarningShown = false;
-#endif
-
-    static OVRGradleGeneration()
+	static OVRGradleGeneration()
 	{
 		EditorApplication.delayCall += OnDelayCall;
 	}
@@ -110,7 +97,7 @@ public class OVRGradleGeneration
 
 	public void OnPreprocessBuild(BuildReport report)
 	{
-		bool useOpenXR = OVRPluginInfo.IsOVRPluginOpenXRActivated();
+		bool useOpenXR = OVRPluginUpdater.IsOVRPluginOpenXRActivated();
 
 #if USING_XR_SDK_OPENXR
 		UnityEngine.Debug.LogWarning("The installation of Unity OpenXR Plugin is detected, which should NOT be used in production when developing Oculus apps for production. Please uninstall the package, and install the Oculus XR Plugin from the Package Manager.");
@@ -124,7 +111,7 @@ public class OVRGradleGeneration
 				throw new BuildFailedException("OpenXR backend for Oculus Plugin is disabled, which is required to support Unity OpenXR Plugin. Please enable OpenXR backend for Oculus Plugin through the 'Oculus -> Tools -> OpenXR' menu.");
 			}
 
-			string ovrRootPath = OVRPluginInfo.GetUtilitiesRootPath();
+			string ovrRootPath = OVRPluginUpdater.GetUtilitiesRootPath();
 			var importers = PluginImporter.GetAllImporters();
 			foreach (var importer in importers)
 			{
@@ -164,20 +151,9 @@ public class OVRGradleGeneration
 		}
 #endif
 
-#if UNITY_ANDROID && USING_XR_SDK_OCULUS && OCULUS_XR_SYMMETRIC
-        OculusSettings settings;
-        UnityEditor.EditorBuildSettings.TryGetConfigObject<OculusSettings>("Unity.XR.Oculus.Settings", out settings);
-
-        if (settings.SymmetricProjection && !symmetricWarningShown)
-        {
-            symmetricWarningShown = true;
-            UnityEngine.Debug.LogWarning("Symmetric Projection is enabled in the Oculus XR Settings. To ensure best GPU performance, make sure at least FFR 1 is being used.");
-        }
-#endif
-
 #if UNITY_ANDROID
 #if USING_XR_SDK
-        if (useOpenXR)
+		if (useOpenXR)
 		{
 			UnityEngine.Debug.LogWarning("Oculus Utilities Plugin with OpenXR is being used, which is under experimental status");
 
@@ -305,7 +281,7 @@ public class OVRGradleGeneration
 
 	private static string GetOculusProjectNetworkSecConfigPath()
 	{
-		var so = ScriptableObject.CreateInstance(typeof(OVRPluginInfo));
+		var so = ScriptableObject.CreateInstance(typeof(OVRPluginUpdaterStub));
 		var script = MonoScript.FromScriptableObject(so);
 		string assetPath = AssetDatabase.GetAssetPath(script);
 		string editorDir = Directory.GetParent(assetPath).FullName;

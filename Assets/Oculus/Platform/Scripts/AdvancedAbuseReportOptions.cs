@@ -32,14 +32,6 @@ namespace Oculus.Platform
       CAPI.ovr_AdvancedAbuseReportOptions_SetReportType(Handle, value);
     }
 
-    public void AddSuggestedUser(UInt64 userID) {
-      CAPI.ovr_AdvancedAbuseReportOptions_AddSuggestedUser(Handle, userID);
-    }
-
-    public void ClearSuggestedUsers() {
-      CAPI.ovr_AdvancedAbuseReportOptions_ClearSuggestedUsers(Handle);
-    }
-
     public void SetVideoMode(AbuseReportVideoMode value) {
       CAPI.ovr_AdvancedAbuseReportOptions_SetVideoMode(Handle, value);
     }

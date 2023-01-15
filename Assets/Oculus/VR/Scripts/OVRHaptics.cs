@@ -169,12 +169,6 @@ public static class OVRHaptics
 		/// </summary>
 		public void Process()
 		{
-			// Resize the native buffer if the Config changes
-			if (m_nativeBuffer.GetCapacity() != Config.MaximumBufferSamplesCount * Config.SampleSizeInBytes)
-			{
-				m_nativeBuffer.Reset(Config.MaximumBufferSamplesCount * Config.SampleSizeInBytes);
-			}
-
 			var hapticsState = OVRPlugin.GetControllerHapticsState(m_controller);
 
 			float elapsedTime = Time.realtimeSinceStartup - m_prevSamplesQueuedTime;

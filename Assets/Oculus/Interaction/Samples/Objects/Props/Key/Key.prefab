@@ -146,7 +146,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9a7676b01585ce43908639a27765dfc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _interactorFilters: []
   _maxInteractors: -1
   _maxSelectingInteractors: -1
   _pointableElement: {fileID: 2127621401763312286}
@@ -158,8 +157,8 @@ MonoBehaviour:
     _positionRotationWeight: 0
   _supportedGrabTypes: 1
   _pinchGrabRules:
-    _thumbRequirement: 1
-    _indexRequirement: 1
+    _thumbRequirement: 2
+    _indexRequirement: 2
     _middleRequirement: 0
     _ringRequirement: 0
     _pinkyRequirement: 0
@@ -432,9 +431,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _pointable: {fileID: 2127621401763312286}
-  _whenRelease:
-    m_PersistentCalls:
-      m_Calls: []
   _whenHover:
     m_PersistentCalls:
       m_Calls: []
@@ -894,7 +890,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9a7676b01585ce43908639a27765dfc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _interactorFilters: []
   _maxInteractors: -1
   _maxSelectingInteractors: -1
   _pointableElement: {fileID: 2127621401763312286}
@@ -906,8 +901,8 @@ MonoBehaviour:
     _positionRotationWeight: 0
   _supportedGrabTypes: 1
   _pinchGrabRules:
-    _thumbRequirement: 1
-    _indexRequirement: 1
+    _thumbRequirement: 2
+    _indexRequirement: 2
     _middleRequirement: 0
     _ringRequirement: 0
     _pinkyRequirement: 0

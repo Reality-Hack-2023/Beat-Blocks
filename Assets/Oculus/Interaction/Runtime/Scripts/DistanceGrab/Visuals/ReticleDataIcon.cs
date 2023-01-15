@@ -59,6 +59,8 @@ namespace Oculus.Interaction.DistanceReticles
             }
         }
 
+        public Transform Target => this.transform;
+
         public Vector3 GetTargetSize()
         {
             if (_renderer != null)
@@ -68,21 +70,25 @@ namespace Oculus.Interaction.DistanceReticles
             return this.transform.localScale;
         }
 
-        public Vector3 ProcessHitPoint(Vector3 hitPoint)
+        public Vector3 GetTargetHit(ConicalFrustum frustum)
         {
-            return Vector3.Lerp(hitPoint, this.transform.position, _snappiness);
-        }
+            float bestScore = float.MinValue;
+            Vector3 bestPoint = Target.position;
 
-        private Vector3 NearestColliderHit(Ray ray, Collider collider, out float score)
-        {
-            Vector3 centerPosition = collider.bounds.center;
-            Vector3 projectedCenter = ray.origin
-                + Vector3.Project(centerPosition - ray.origin, ray.direction);
-            Vector3 point = collider.ClosestPointOnBounds(projectedCenter);
-            Vector3 originToInteractable = point - ray.origin;
-            score = Vector3.Angle(originToInteractable.normalized, ray.direction);
+            if (_colliders == null)
+            {
+                return bestPoint;
+            }
 
-            return point;
+            foreach (Collider collider in _colliders)
+            {
+                Vector3 point = frustum.NearestColliderHit(collider, out float score);
+                if (score > bestScore)
+                {
+                    bestPoint = point;
+                }
+            }
+            return Vector3.Lerp(bestPoint, Target.position, _snappiness);
         }
 
         #region Inject

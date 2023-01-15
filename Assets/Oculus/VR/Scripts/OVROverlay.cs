@@ -208,7 +208,7 @@ public class OVROverlay : MonoBehaviour
 	}
 
 	[SerializeField]
-	internal bool _previewInEditor = false;
+	private bool _previewInEditor = false;
 
 #if UNITY_EDITOR
 	private GameObject previewObject;
@@ -314,7 +314,6 @@ public class OVROverlay : MonoBehaviour
 			}
 		}
 
-
 		bool needsSetup = (
 			isOverridePending ||
 			layerDesc.MipLevels != mipLevels ||
@@ -324,17 +323,13 @@ public class OVROverlay : MonoBehaviour
 			layerDesc.LayerFlags != flags ||
 			!layerDesc.TextureSize.Equals(size) ||
 			layerDesc.Shape != shape ||
-			layerCompositionDepth != compositionDepth)
-			;
+			layerCompositionDepth != compositionDepth);
 
 		if (!needsSetup)
 			return false;
 
 		OVRPlugin.LayerDesc desc = OVRPlugin.CalculateLayerDesc(shape, layout, size, mipLevels, sampleCount, etFormat, flags);
-
 		OVRPlugin.EnqueueSetupLayer(desc, compositionDepth, layerIdPtr);
-
-
 		layerId = (int)layerIdHandle.Target;
 
 		if (layerId > 0)
@@ -855,13 +850,18 @@ public class OVROverlay : MonoBehaviour
 
 	public static bool IsPassthroughShape(OverlayShape shape)
 	{
-		return OVRPlugin.IsPassthroughShape((OVRPlugin.OverlayShape)shape);
+		return shape == OverlayShape.ReconstructionPassthrough
+			|| shape == OverlayShape.KeyboardHandsPassthrough
+			|| shape == OverlayShape.KeyboardMaskedHandsPassthrough
+			|| shape == OverlayShape.SurfaceProjectedPassthrough;
 	}
 
 #region Unity Messages
 
 	void Awake()
 	{
+		Debug.Log("Overlay Awake");
+
 		if (Application.isPlaying)
 		{
 			if (tex2DMaterial == null)

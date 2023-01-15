@@ -461,7 +461,6 @@ namespace Assets.Oculus.VR.Editor
 			{
 				targetDeviceTypes.Add(OVRProjectConfig.DeviceType.Quest);
 				targetDeviceTypes.Add(OVRProjectConfig.DeviceType.Quest2);
-				targetDeviceTypes.Add(OVRProjectConfig.DeviceType.QuestPro);
 			}
 
 			if (targetDeviceTypes.Count != 0)

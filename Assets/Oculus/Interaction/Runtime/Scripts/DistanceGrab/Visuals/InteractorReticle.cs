@@ -24,7 +24,7 @@ using UnityEngine.Assertions;
 namespace Oculus.Interaction.DistanceReticles
 {
     public abstract class InteractorReticle<TReticleData> : MonoBehaviour
-        where TReticleData : class, IReticleData
+        where TReticleData : IReticleData
     {
         [SerializeField]
         private bool _visibleDuringSelect = false;
@@ -40,27 +40,24 @@ namespace Oculus.Interaction.DistanceReticles
             }
         }
 
-        protected bool _started;
-        private TReticleData _targetData;
-        private bool _drawn;
+        protected abstract IInteractorView Interactor { get; }
 
-        protected abstract IInteractorView Interactor { get; set; }
-        protected abstract Component InteractableComponent { get; }
+        private TReticleData _targetData;
+        private bool _drawing;
+        protected bool _started;
 
         protected virtual void Start()
         {
             this.BeginStart(ref _started);
-            Assert.IsNotNull(Interactor, $"{nameof(InteractorReticle<TReticleData>)} requires an Interactor");
+            Assert.IsNotNull(Interactor);
             Hide();
             this.EndStart(ref _started);
         }
-
         protected virtual void OnEnable()
         {
             if (_started)
             {
                 Interactor.WhenStateChanged += HandleStateChanged;
-                Interactor.WhenPostprocessed += HandlePostProcessed;
             }
         }
 
@@ -69,71 +66,63 @@ namespace Oculus.Interaction.DistanceReticles
             if (_started)
             {
                 Interactor.WhenStateChanged -= HandleStateChanged;
-                Interactor.WhenPostprocessed -= HandlePostProcessed;
             }
         }
 
         private void HandleStateChanged(InteractorStateChangeArgs args)
         {
             if (args.NewState == InteractorState.Normal
-                   || args.NewState == InteractorState.Disabled)
+                && args.PreviousState != InteractorState.Disabled)
             {
                 InteractableUnset();
             }
-            else if (args.NewState == InteractorState.Hover
-                && args.PreviousState != InteractorState.Select)
+            else if(args.NewState == InteractorState.Select)
             {
-                InteractableSet(InteractableComponent);
-            }
-        }
-
-        private void HandlePostProcessed()
-        {
-            if (_targetData != null
-                  && (Interactor.State == InteractorState.Hover
-                  || (Interactor.State == InteractorState.Select && _visibleDuringSelect)))
-            {
-                if (!_drawn)
+                if (!_visibleDuringSelect)
                 {
-                    _drawn = true;
-                    Draw(_targetData);
+                    InteractableUnset();
                 }
-                Align(_targetData);
             }
-            else if (_drawn)
+            else if (args.NewState == InteractorState.Hover)
             {
-                _drawn = false;
-                Hide();
-            }
-        }
-
-        private void InteractableSet(Component interactable)
-        {
-            if (interactable != null
-                && interactable.TryGetComponent(out _targetData))
-            {
-                _drawn = false;
-            }
-            else
-            {
-                _targetData = null;
-            }
-        }
-
-        private void InteractableUnset()
-        {
-            _targetData = default(TReticleData);
-            if (_drawn)
-            {
-                _drawn = false;
-                Hide();
+                InteractableSet(Interactor.Candidate as MonoBehaviour);
             }
         }
 
         #region Drawing
         protected abstract void Draw(TReticleData data);
-        protected abstract void Align(TReticleData data);
         protected abstract void Hide();
+        protected abstract void Align(TReticleData data);
         #endregion
+
+        private void InteractableSet(MonoBehaviour interactableComponent)
+        {
+            if (interactableComponent != null
+                && interactableComponent.TryGetComponent(out TReticleData reticleData))
+            {
+                _targetData = reticleData;
+                Draw(reticleData);
+                Align(reticleData);
+                _drawing = true;
+            }
+        }
+
+        private void InteractableUnset()
+        {
+            if (_drawing)
+            {
+                Hide();
+                _targetData = default(TReticleData);
+                _drawing = false;
+            }
+        }
+
+        protected virtual void LateUpdate()
+        {
+            if (_drawing)
+            {
+                Align(_targetData);
+            }
+        }
     }
 }

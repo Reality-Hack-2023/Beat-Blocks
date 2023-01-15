@@ -150,7 +150,7 @@ namespace Oculus.Interaction
             }
         }
 
-        private void HandleStateChanged(InteractorStateChangeArgs args)
+        private void HandleStateChanged(InteractorStateChangeArgs obj)
         {
             UpdateVisual();
         }

@@ -54,7 +54,7 @@ namespace Oculus.Interaction
         {
             if (_started)
             {
-                Controller.WhenUpdated += HandleUpdated;
+                Controller.ControllerUpdated += HandleControllerUpdated;
             }
         }
 
@@ -62,16 +62,16 @@ namespace Oculus.Interaction
         {
             if (_started)
             {
-                Controller.WhenUpdated -= HandleUpdated;
+                Controller.ControllerUpdated -= HandleControllerUpdated;
             }
         }
 
-        private void HandleUpdated()
+        private void HandleControllerUpdated()
         {
             IController controller = Controller;
             if (controller.TryGetPointerPose(out Pose pose))
             {
-                pose.position += pose.rotation * (Controller.Scale * _offset);
+                pose.position += pose.rotation * _offset;
                 transform.SetPose(pose);
                 Active = true;
             }

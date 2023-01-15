@@ -26,11 +26,11 @@ using UnityEngine.Assertions;
 
 namespace Oculus.Interaction
 {
-    public class HandVisual : MonoBehaviour, IHandVisual
+    public class HandVisual : MonoBehaviour
     {
         [SerializeField, Interface(typeof(IHand))]
         private MonoBehaviour _hand;
-        public IHand Hand { get; private set; }
+        public IHand Hand;
 
         [SerializeField]
         private SkinnedMeshRenderer _skinnedMeshRenderer;
@@ -56,7 +56,7 @@ namespace Oculus.Interaction
 
         private int _wristScalePropertyId;
 
-        public IList<Transform> Joints => _jointTransforms;
+        public List<Transform> Joints => _jointTransforms;
 
         public bool ForceOffVisibility { get; set; }
 
@@ -125,8 +125,8 @@ namespace Oculus.Interaction
             {
                 if (_root != null && Hand.GetRootPose(out Pose handRootPose))
                 {
-                    _root.position = handRootPose.position;
-                    _root.rotation = handRootPose.rotation;
+                    _root.localPosition = handRootPose.position;
+                    _root.localRotation = handRootPose.rotation;
                 }
             }
 
@@ -134,8 +134,7 @@ namespace Oculus.Interaction
             {
                 if (_root != null)
                 {
-                    float parentScale = _root.parent != null ? _root.parent.lossyScale.x : 1f;
-                    _root.localScale = Hand.Scale / parentScale * Vector3.one;
+                    _root.localScale = new Vector3(Hand.Scale, Hand.Scale, Hand.Scale);
                 }
             }
 
@@ -163,11 +162,6 @@ namespace Oculus.Interaction
         public Transform GetTransformByHandJointId(HandJointId handJointId)
         {
             return _jointTransforms[(int)handJointId];
-        }
-
-        public Pose GetJointPose(HandJointId jointId, Space space)
-        {
-            return GetTransformByHandJointId(jointId).GetPose(space);
         }
 
         #region Inject
@@ -208,7 +202,6 @@ namespace Oculus.Interaction
         {
             _handMaterialPropertyBlockEditor = editor;
         }
-
         #endregion
     }
 }

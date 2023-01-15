@@ -84,15 +84,9 @@ public static partial class OVRExtensions
 		OVRPose poseInHeadSpace = trackingSpacePose.ToHeadSpacePose();
 
 		// Transform from head space to world space
-		var cameraTransform = mainCamera.transform.localToWorldMatrix;
-		var headSpaceTransform = Matrix4x4.TRS(
-			poseInHeadSpace.position, poseInHeadSpace.orientation, Vector3.one);
-		var worldSpaceTransform = cameraTransform * headSpaceTransform;
-		return new OVRPose
-		{
-			position = worldSpaceTransform.GetColumn(3),
-			orientation = worldSpaceTransform.rotation
-		};
+		OVRPose ret = mainCamera.transform.ToOVRPose() * poseInHeadSpace;
+
+		return ret;
 	}
 
 	/// <summary>

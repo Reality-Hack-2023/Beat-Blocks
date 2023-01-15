@@ -18,8 +18,7 @@
  * limitations under the License.
  */
 
-using Oculus.Interaction.Grab;
-using Oculus.Interaction.Grab.GrabSurfaces;
+using Oculus.Interaction.HandGrab.SnapSurfaces;
 using Oculus.Interaction.Input;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -45,12 +44,12 @@ namespace Oculus.Interaction.HandGrab
         [SerializeField]
         private Transform _relativeTo;
 
-        [SerializeField, Optional, Interface(typeof(IGrabSurface))]
+        [SerializeField, Optional, Interface(typeof(ISnapSurface))]
         private MonoBehaviour _surface = null;
-        private IGrabSurface _snapSurface;
-        public IGrabSurface SnapSurface
+        private ISnapSurface _snapSurface;
+        public ISnapSurface SnapSurface
         {
-            get => _snapSurface ?? _surface as IGrabSurface;
+            get => _snapSurface ?? _surface as ISnapSurface;
             private set
             {
                 _snapSurface = value;
@@ -156,7 +155,7 @@ namespace Oculus.Interaction.HandGrab
             else
             {
                 bestPlace = snap;
-                bestScore = GrabPoseHelper.Similarity(desired, snap, scoringModifier);
+                bestScore = PoseUtils.Similarity(desired, snap, scoringModifier);
             }
 
             _relativeTo.Delta(bestPlace, ref bestSnapPoint);
@@ -171,7 +170,7 @@ namespace Oculus.Interaction.HandGrab
             _relativeTo = relativeTo;
         }
 
-        public void InjectOptionalSurface(IGrabSurface surface)
+        public void InjectOptionalSurface(ISnapSurface surface)
         {
             _surface = surface as MonoBehaviour;
             SnapSurface = surface;

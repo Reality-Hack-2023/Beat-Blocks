@@ -47,10 +47,6 @@ namespace Oculus.Interaction
         [SerializeField, Interface(typeof(ICandidateComparer)), Optional]
         private MonoBehaviour _interactorComparer;
 
-        [SerializeField, Optional]
-        private UnityEngine.Object _data = null;
-        public object Data { get; protected set; } = null;
-
         public int MaxIterationsPerFrame = 3;
         protected ICandidateComparer CandidateComparer = null;
 
@@ -80,12 +76,6 @@ namespace Oculus.Interaction
             if (_interactorComparer != null)
             {
                 Assert.IsNotNull(CandidateComparer);
-            }
-
-            if (Data == null)
-            {
-                _data = this;
-                Data = _data;
             }
         }
 
@@ -221,8 +211,7 @@ namespace Oculus.Interaction
         }
 
         public bool ShouldHover => _activeInteractor != null && _activeInteractor.ShouldHover;
-        public bool ShouldUnhover => _activeInteractor == null ||
-                                     _activeInteractor.ShouldUnhover ||
+        public bool ShouldUnhover => _activeInteractor == null || _activeInteractor.ShouldUnhover ||
                                      _activeInteractor != _candidateInteractor;
         public bool ShouldSelect => _activeInteractor != null && _activeInteractor.ShouldSelect;
         public bool ShouldUnselect => _activeInteractor == null || _activeInteractor.ShouldUnselect;
@@ -242,7 +231,7 @@ namespace Oculus.Interaction
 
         public bool HasCandidate => _candidateInteractor != null && _candidateInteractor.HasCandidate;
 
-        public object CandidateProperties => HasCandidate ? _candidateInteractor.CandidateProperties : null;
+        public object Candidate => HasCandidate ? _candidateInteractor.Candidate : null;
 
         public bool HasInteractable => _activeInteractor != null &&
                                        _activeInteractor.HasInteractable;
@@ -267,22 +256,19 @@ namespace Oculus.Interaction
                 InteractorState previousState = _state;
                 _state = value;
 
-                WhenStateChanged(new InteractorStateChangeArgs(
-                    previousState, _state
-                ));
+                WhenStateChanged(new InteractorStateChangeArgs
+                {
+                    PreviousState = previousState,
+                    NewState = _state
+                });
             }
         }
 
         public virtual void AddInteractor(IInteractor interactor)
         {
             Interactors.Add(interactor);
+            _interactors.Add(interactor as MonoBehaviour);
             interactor.IsRootDriver = false;
-
-            MonoBehaviour interactorMono = interactor as MonoBehaviour;
-            if (interactorMono != null)
-            {
-                _interactors.Add(interactor as MonoBehaviour);
-            }
         }
 
         public virtual void RemoveInteractor(IInteractor interactor)
@@ -291,13 +277,8 @@ namespace Oculus.Interaction
             {
                 return;
             }
-
+            _interactors.Remove(interactor as MonoBehaviour);
             interactor.IsRootDriver = true;
-            MonoBehaviour interactorMono = interactor as MonoBehaviour;
-            if (interactorMono != null)
-            {
-                _interactors.Remove(interactor as MonoBehaviour);
-            }
         }
 
         private int Compare(IInteractor a, IInteractor b)
@@ -314,7 +295,7 @@ namespace Oculus.Interaction
                     return -1;
                 }
 
-                int result = CandidateComparer.Compare(a.CandidateProperties, b.CandidateProperties);
+                int result = CandidateComparer.Compare(a.Candidate, b.Candidate);
                 return result > 0 ? 1 : -1;
             }
 
@@ -328,11 +309,6 @@ namespace Oculus.Interaction
                 return;
             }
 
-            Drive();
-        }
-
-        public void Drive()
-        {
             Preprocess();
 
             InteractorState previousState = State;
@@ -415,12 +391,6 @@ namespace Oculus.Interaction
         {
             CandidateComparer = comparer;
             _interactorComparer = comparer as MonoBehaviour;
-        }
-
-        public void InjectOptionalData(object data)
-        {
-            _data = data as UnityEngine.Object;
-            Data = data;
         }
 
         #endregion

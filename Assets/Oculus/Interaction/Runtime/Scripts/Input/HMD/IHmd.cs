@@ -23,9 +23,9 @@ using UnityEngine;
 
 namespace Oculus.Interaction.Input
 {
-    public interface IHmd : IAspectProvider
+    public interface IHmd
     {
         bool GetRootPose(out Pose pose);
-        event Action WhenUpdated;
+        event Action HmdUpdated;
     }
 }

@@ -28,6 +28,7 @@ namespace Oculus.Interaction.DistanceReticles
         [SerializeField, Interface(typeof(IDistanceInteractor))]
         private MonoBehaviour _distanceInteractor;
         private IDistanceInteractor DistanceInteractor { get; set; }
+        protected override IInteractorView Interactor => DistanceInteractor;
 
         [SerializeField]
         private MeshRenderer _renderer;
@@ -65,9 +66,6 @@ namespace Oculus.Interaction.DistanceReticles
 
         private Vector3 _originalScale;
 
-        protected override IInteractorView Interactor { get; set; }
-        protected override Component InteractableComponent => DistanceInteractor.DistanceInteractable as Component;
-
         #region Editor events
         protected virtual void OnValidate()
         {
@@ -78,15 +76,14 @@ namespace Oculus.Interaction.DistanceReticles
         }
         #endregion
 
-        protected virtual void Awake()
+        private void Awake()
         {
             DistanceInteractor = _distanceInteractor as IDistanceInteractor;
-            Interactor = DistanceInteractor;
         }
 
         protected override void Start()
         {
-            this.BeginStart(ref _started, () => base.Start());
+            this.BeginStart(ref _started);
             Assert.IsNotNull(_renderer);
             Assert.IsNotNull(_centerEye);
             _originalScale = this.transform.localScale;
@@ -114,7 +111,8 @@ namespace Oculus.Interaction.DistanceReticles
 
         protected override void Align(ReticleDataIcon data)
         {
-            this.transform.position = data.ProcessHitPoint(DistanceInteractor.HitPoint);
+            ConicalFrustum frustum = DistanceInteractor.PointerFrustum;
+            this.transform.position = data.GetTargetHit(frustum);
 
             if (_renderer.enabled)
             {
@@ -135,19 +133,18 @@ namespace Oculus.Interaction.DistanceReticles
         }
 
         #region Inject
-        public void InjectAllReticleIconDrawer(IDistanceInteractor distanceInteractor,
+        public void InjectAllReticleIconDrawer(IDistanceInteractor interactor,
             Transform centerEye, MeshRenderer renderer)
         {
-            InjectDistanceInteractor(distanceInteractor);
+            InjectDistanceInteractor(interactor);
             InjectCenterEye(centerEye);
             InjectRenderer(renderer);
         }
 
-        public void InjectDistanceInteractor(IDistanceInteractor distanceInteractor)
+        public void InjectDistanceInteractor(IDistanceInteractor interactor)
         {
-            _distanceInteractor = distanceInteractor as MonoBehaviour;
-            DistanceInteractor = distanceInteractor;
-            Interactor = distanceInteractor;
+            _distanceInteractor = interactor as MonoBehaviour;
+            DistanceInteractor = interactor;
         }
 
         public void InjectCenterEye(Transform centerEye)

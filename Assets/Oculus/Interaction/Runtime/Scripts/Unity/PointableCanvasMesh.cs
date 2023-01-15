@@ -21,40 +21,38 @@
 using UnityEngine;
 using UnityEngine.Assertions;
 using Oculus.Interaction.UnityCanvas;
-using UnityEngine.Serialization;
 
 namespace Oculus.Interaction
 {
     public class PointableCanvasMesh : PointableElement
     {
         [SerializeField]
-        [FormerlySerializedAs("_canvasRenderTextureMesh")]
-        private CanvasMesh _canvasMesh;
+        private CanvasRenderTextureMesh _canvasRenderTextureMesh;
 
         protected override void Start()
         {
             base.Start();
-            Assert.IsNotNull(_canvasMesh);
+            Assert.IsNotNull(_canvasRenderTextureMesh);
         }
 
         public override void ProcessPointerEvent(PointerEvent evt)
         {
             Vector3 transformPosition =
-                _canvasMesh.ImposterToCanvasTransformPoint(evt.Pose.position);
+                _canvasRenderTextureMesh.ImposterToCanvasTransformPoint(evt.Pose.position);
             Pose transformedPose = new Pose(transformPosition, evt.Pose.rotation);
             base.ProcessPointerEvent(new PointerEvent(evt.Identifier, evt.Type, transformedPose));
         }
 
         #region Inject
 
-        public void InjectAllCanvasMeshPointable(CanvasMesh canvasMesh)
+        public void InjectAllCanvasMeshPointable(CanvasRenderTextureMesh canvasRenderTextureMesh)
         {
-            InjectCanvasMesh(canvasMesh);
+            InjectCanvasRenderTextureMesh(canvasRenderTextureMesh);
         }
 
-        public void InjectCanvasMesh(CanvasMesh canvasMesh)
+        public void InjectCanvasRenderTextureMesh(CanvasRenderTextureMesh canvasRenderTextureMesh)
         {
-            _canvasMesh = canvasMesh;
+            _canvasRenderTextureMesh = canvasRenderTextureMesh;
         }
 
         #endregion

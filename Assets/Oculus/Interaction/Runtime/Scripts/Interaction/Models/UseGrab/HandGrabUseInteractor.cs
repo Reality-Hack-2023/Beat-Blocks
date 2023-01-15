@@ -59,14 +59,30 @@ namespace Oculus.Interaction.HandGrab
         public Action<IHandGrabState> WhenHandGrabStarted { get; set; } = delegate { };
         public Action<IHandGrabState> WhenHandGrabEnded { get; set; } = delegate { };
 
-        protected override bool ComputeShouldSelect()
+        public override bool ShouldSelect
         {
-            return _handUseShouldSelect;
+            get
+            {
+                if (State != InteractorState.Hover)
+                {
+                    return false;
+                }
+
+                return _candidate == _interactable && _handUseShouldSelect;
+            }
         }
 
-        protected override bool ComputeShouldUnselect()
+        public override bool ShouldUnselect
         {
-            return _handUseShouldUnselect || SelectedInteractable == null;
+            get
+            {
+                if (State != InteractorState.Select)
+                {
+                    return false;
+                }
+
+                return _handUseShouldUnselect || SelectedInteractable == null;
+            }
         }
 
         protected override void Awake()
@@ -243,7 +259,7 @@ namespace Oculus.Interaction.HandGrab
             HandGrabUseInteractable bestCandidate = null;
 
             _usesHandPose = false;
-            var candidates = HandGrabUseInteractable.Registry.List(this);
+            IEnumerable<HandGrabUseInteractable> candidates = HandGrabUseInteractable.Registry.List(this);
             foreach (HandGrabUseInteractable candidate in candidates)
             {
                 candidate.FindBestHandPoses(Hand != null ? Hand.Scale : 1f,

@@ -21,7 +21,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Profiling;
-using UnityEngine.Assertions;
+using UnityEngine.EventSystems;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -29,19 +29,10 @@ using UnityEditor;
 
 namespace Oculus.Interaction.UnityCanvas
 {
+    [RequireComponent(typeof(Canvas))]
     [DisallowMultipleComponent]
-    public class CanvasRenderTexture : MonoBehaviour
+    public class CanvasRenderTexture : UIBehaviour
     {
-        private class TransformChangeListener : MonoBehaviour
-        {
-            public event Action WhenRectTransformDimensionsChanged = delegate { };
-
-            private void OnRectTransformDimensionsChange()
-            {
-                WhenRectTransformDimensionsChanged();
-            }
-        }
-
         public enum DriveMode
         {
             Auto,
@@ -51,9 +42,6 @@ namespace Oculus.Interaction.UnityCanvas
         public const int DEFAULT_UI_LAYERMASK = 1 << 5; //Hardcoded as the UI layer in Unity.
 
         private static readonly Vector2Int DEFAULT_TEXTURE_RES = new Vector2Int(128, 128);
-
-        [SerializeField]
-        private Canvas _canvas;
 
         [Tooltip("If you need extra resolution, you can use this as a whole-integer multiplier of the final resolution used to render the texture.")]
         [Range(1, 3)]
@@ -70,22 +58,69 @@ namespace Oculus.Interaction.UnityCanvas
         [SerializeField]
         private Vector2Int _resolution = DEFAULT_TEXTURE_RES;
 
+        [SerializeField]
+        private int _pixelsPerUnit = 100;
+
+        [SerializeField]
+        private RenderingMode _renderingMode = RenderingMode.AlphaCutout;
+
         [Tooltip("Whether or not mip-maps should be auto-generated for the texture.  Can help aliasing if the texture can be " +
         "viewed from many difference distances.")]
         [SerializeField]
         private bool _generateMipMaps = false;
 
+        [Tooltip(
+        "Requires MSAA.  Provides limited transparency useful for anti-aliasing soft edges of UI elements.")]
         [SerializeField]
-        private int _pixelsPerUnit = 100;
+        private bool _useAlphaToMask = true;
+
+        [Range(0, 1)]
+        [SerializeField]
+        private float _alphaCutoutThreshold = 0.5f;
+
+        [Tooltip(
+        "Uses a more expensive image sampling technique for improved quality at the cost of performance.")]
+        [SerializeField]
+        protected bool _enableSuperSampling = true;
+
+        [Tooltip(
+        "Attempts to anti-alias the edges of the underlay by using alpha blending.  Can cause borders of " +
+        "darkness around partially transparent objects.")]
+        [SerializeField]
+        private bool _doUnderlayAntiAliasing = false;
+
+        [Tooltip(
+        "OVR Layers can provide a buggy or less ideal workflow while in the editor.  This option allows you " +
+        "emulate the layer rendering while in the editor, while still using the OVR Layer rendering in a build.")]
+        [SerializeField]
+        private bool _emulateWhileInEditor = true;
 
         [Header("Rendering Settings")]
         [Tooltip("The layers to render when the rendering texture is created.  All child renderers should be part of this mask.")]
         [SerializeField]
         private LayerMask _renderingLayers = DEFAULT_UI_LAYERMASK;
 
+        [SerializeField, Optional]
+        private Material _defaultUIMaterial = null;
+
+        public RenderingMode RenderingMode => _renderingMode;
+
         public LayerMask RenderingLayers => _renderingLayers;
 
+        public bool UseAlphaToMask => _useAlphaToMask;
+
+        public bool DoUnderlayAntiAliasing => _doUnderlayAntiAliasing;
+
+        public bool EnableSuperSampling => _enableSuperSampling;
+
+        public float AlphaCutoutThreshold => _alphaCutoutThreshold;
+
         public Action<Texture> OnUpdateRenderTexture = delegate { };
+
+        public bool UseEditorEmulation()
+        {
+            return Application.isEditor ? _emulateWhileInEditor : false;
+        }
 
         public int RenderScale
         {
@@ -114,11 +149,12 @@ namespace Oculus.Interaction.UnityCanvas
             }
         }
 
+        public Material DefaultUIMaterial => _defaultUIMaterial;
+
         public Camera OverlayCamera => _camera;
 
         public Texture Texture => _tex;
 
-        private TransformChangeListener _listener;
         private RenderTexture _tex;
         private Camera _camera;
 
@@ -126,12 +162,7 @@ namespace Oculus.Interaction.UnityCanvas
 
         public Vector2Int CalcAutoResolution()
         {
-            if (_canvas == null)
-            {
-                return DEFAULT_TEXTURE_RES;
-            }
-
-            var rectTransform = _canvas.GetComponent<RectTransform>();
+            var rectTransform = GetComponent<RectTransform>();
             if (rectTransform == null)
             {
                 return DEFAULT_TEXTURE_RES;
@@ -160,8 +191,10 @@ namespace Oculus.Interaction.UnityCanvas
 
         public Vector2Int GetScaledResolutionToUse()
         {
-            Vector2 resolution = GetBaseResolutionToUse();
-            return Vector2Int.RoundToInt(resolution * _renderScale);
+            return new Vector2Int(
+                Mathf.RoundToInt(GetBaseResolutionToUse().x * (float)_renderScale),
+                Mathf.RoundToInt(GetBaseResolutionToUse().y * (float)_renderScale)
+            );
         }
 
         public float PixelsToUnits(float pixels)
@@ -174,9 +207,25 @@ namespace Oculus.Interaction.UnityCanvas
             return _pixelsPerUnit * units;
         }
 
-#if UNITY_EDITOR
-        protected void OnValidate()
+        public bool ShouldUseOVROverlay
         {
+            get
+            {
+                switch (_renderingMode)
+                {
+                    case RenderingMode.OVR_Underlay:
+                    case RenderingMode.OVR_Overlay:
+                        return !UseEditorEmulation();
+                    default:
+                        return false;
+                }
+            }
+        }
+
+#if UNITY_EDITOR
+        protected override void OnValidate()
+        {
+            base.OnValidate();
             if (Application.isPlaying && _started)
             {
                 EditorApplication.delayCall += () =>
@@ -187,32 +236,35 @@ namespace Oculus.Interaction.UnityCanvas
         }
 #endif
 
-        protected void Start()
+        protected override void OnRectTransformDimensionsChange()
         {
-            this.BeginStart(ref _started);
-            Assert.IsNotNull(_canvas);
-            this.EndStart(ref _started);
-        }
-
-        protected void OnEnable()
-        {
+            base.OnRectTransformDimensionsChange();
             if (_started)
             {
-                if (_listener == null)
-                {
-                    _listener = _canvas.gameObject.AddComponent<TransformChangeListener>();
-                }
-                _listener.WhenRectTransformDimensionsChanged += WhenCanvasRectTransformDimensionsChanged;
                 UpdateCamera();
             }
         }
 
-        private void WhenCanvasRectTransformDimensionsChanged()
+        protected override void Start()
         {
-            UpdateCamera();
+            this.BeginStart(ref _started, () => base.Start());
+            this.EndStart(ref _started);
         }
 
-        protected void OnDisable()
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            if (_started)
+            {
+                if (_defaultUIMaterial == null)
+                {
+                    _defaultUIMaterial = new Material(Shader.Find("UI/Default (Overlay)"));
+                }
+                UpdateCamera();
+            }
+        }
+
+        protected override void OnDisable()
         {
             if (_started)
             {
@@ -224,11 +276,8 @@ namespace Oculus.Interaction.UnityCanvas
                 {
                     DestroyImmediate(_tex);
                 }
-                if (_listener != null)
-                {
-                    _listener.WhenRectTransformDimensionsChanged -= WhenCanvasRectTransformDimensionsChanged;
-                }
             }
+            base.OnDisable();
         }
 
         protected void UpdateCamera()
@@ -268,12 +317,15 @@ namespace Oculus.Interaction.UnityCanvas
             Profiler.BeginSample("InterfaceRenderer.UpdateRenderTexture");
             try
             {
-                Vector2Int resolutionToUse = GetScaledResolutionToUse();
+                var resolutionToUse = GetScaledResolutionToUse();
+
+                //Never generate mips when using OVROverlay, they are not used
+                bool desiredMipsSetting = ShouldUseOVROverlay ? false : _generateMipMaps;
 
                 if (_tex == null ||
                     _tex.width != resolutionToUse.x ||
                     _tex.height != resolutionToUse.y ||
-                    _tex.autoGenerateMips != _generateMipMaps)
+                    _tex.autoGenerateMips != desiredMipsSetting)
                 {
                     if (_tex != null)
                     {
@@ -281,9 +333,9 @@ namespace Oculus.Interaction.UnityCanvas
                         DestroyImmediate(_tex);
                     }
 
-                    _tex = new RenderTexture(resolutionToUse.x, resolutionToUse.y, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+                    _tex = new RenderTexture(resolutionToUse.x, resolutionToUse.y, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
                     _tex.filterMode = FilterMode.Bilinear;
-                    _tex.autoGenerateMips = _generateMipMaps;
+                    _tex.autoGenerateMips = desiredMipsSetting;
                     _camera.targetTexture = _tex;
 
                     OnUpdateRenderTexture(_tex);
@@ -315,7 +367,7 @@ namespace Oculus.Interaction.UnityCanvas
         {
             GameObject obj = new GameObject(name);
 
-            obj.transform.SetParent(_canvas.transform);
+            obj.transform.SetParent(transform);
             obj.transform.localPosition = Vector3.zero;
             obj.transform.localRotation = Quaternion.identity;
             obj.transform.localScale = Vector3.one;
@@ -330,8 +382,14 @@ namespace Oculus.Interaction.UnityCanvas
             public static readonly string RenderScale = nameof(_renderScale);
             public static readonly string PixelsPerUnit = nameof(_pixelsPerUnit);
             public static readonly string RenderLayers = nameof(_renderingLayers);
-            public static readonly string GenerateMipMaps = nameof(_generateMipMaps);
-            public static readonly string Canvas = nameof(_canvas);
+            public static readonly string RenderingMode = nameof(_renderingMode);
+            public static readonly string GenerateMips = nameof(_generateMipMaps);
+            public static readonly string UseAlphaToMask = nameof(_useAlphaToMask);
+            public static readonly string AlphaCutoutThreshold = nameof(_alphaCutoutThreshold);
+            public static readonly string UseExpensiveSuperSample = nameof(_enableSuperSampling);
+            public static readonly string DoUnderlayAA = nameof(_doUnderlayAntiAliasing);
+            public static readonly string EmulateWhileInEditor = nameof(_emulateWhileInEditor);
+            public static readonly string DefaultUIMaterial = nameof(_defaultUIMaterial);
         }
 
         #region Inject
@@ -339,12 +397,18 @@ namespace Oculus.Interaction.UnityCanvas
         public void InjectAllCanvasRenderTexture(int pixelsPerUnit,
                                                  int renderScale,
                                                  LayerMask renderingLayers,
-                                                 bool generateMipMaps)
+                                                 RenderingMode renderingMode,
+                                                 bool doUnderlayAntiAliasing,
+                                                 float alphaCutoutThreshold,
+                                                 bool useAlphaToMask)
         {
             InjectPixelsPerUnit(pixelsPerUnit);
             InjectRenderScale(renderScale);
             InjectRenderingLayers(renderingLayers);
-            InjectGenerateMipMaps(generateMipMaps);
+            InjectRenderingMode(renderingMode);
+            InjectDoUnderlayAntiAliasing(doUnderlayAntiAliasing);
+            InjectAlphaCutoutThreshold(alphaCutoutThreshold);
+            InjectUseAlphaToMask(useAlphaToMask);
         }
 
         public void InjectPixelsPerUnit(int pixelsPerUnit)
@@ -357,12 +421,37 @@ namespace Oculus.Interaction.UnityCanvas
             _renderScale = renderScale;
         }
 
+        public void InjectRenderingMode(RenderingMode renderingMode)
+        {
+            _renderingMode = renderingMode;
+        }
+
         public void InjectRenderingLayers(LayerMask renderingLayers)
         {
             _renderingLayers = renderingLayers;
         }
 
-        public void InjectGenerateMipMaps(bool generateMipMaps)
+        public void InjectDoUnderlayAntiAliasing(bool doUnderlayAntiAliasing)
+        {
+            _doUnderlayAntiAliasing = doUnderlayAntiAliasing;
+        }
+
+        public void InjectUseAlphaToMask(bool useAlphaToMask)
+        {
+            _useAlphaToMask = useAlphaToMask;
+        }
+
+        public void InjectAlphaCutoutThreshold(float alphaCutoutThreshold)
+        {
+            _alphaCutoutThreshold = alphaCutoutThreshold;
+        }
+
+        public void InjectOptionalDefaultUIMaterial(Material defaultUIMaterial)
+        {
+            _defaultUIMaterial = defaultUIMaterial;
+        }
+
+        public void InjectOptionalGenerateMipMaps(bool generateMipMaps)
         {
             _generateMipMaps = generateMipMaps;
         }
